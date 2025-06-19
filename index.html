@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mein Vokabeltrainer</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f9f9f9;
+      padding: 2rem;
+      max-width: 600px;
+      margin: auto;
+    }
+    h1 {
+      text-align: center;
+    }
+    input, textarea, button {
+      width: 100%;
+      margin: 0.5rem 0;
+      padding: 0.5rem;
+      font-size: 1rem;
+    }
+    .card {
+      background: white;
+      padding: 1rem;
+      margin: 1rem 0;
+      border-radius: 0.5rem;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .vocab-list {
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>🌍 Mein Vokabeltrainer</h1>
+
+  <form id="vocabForm">
+    <label>Wort (Fremdsprache):</label>
+    <input type="text" id="foreignWord" required placeholder="z. B. дом">
+
+    <label>Übersetzung (Deutsch):</label>
+    <input type="text" id="germanWord" required placeholder="z. B. Haus">
+
+    <button type="submit">➕ Hinzufügen</button>
+  </form>
+
+  <div class="vocab-list" id="vocabList">
+    <h2>📝 Meine Vokabeln</h2>
+    <!-- Wörter erscheinen hier -->
+  </div>
+
+  <script>
+    const form = document.getElementById('vocabForm');
+    const list = document.getElementById('vocabList');
+
+    let vocab = JSON.parse(localStorage.getItem('vocab') || '[]');
+
+    function renderVocab() {
+      list.innerHTML = '<h2>📝 Meine Vokabeln</h2>';
+      vocab.forEach(({ foreign, german }, i) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <strong>${foreign}</strong><br>
+          <em>${german}</em>
+          <br><button onclick="deleteVocab(${i})">❌ Löschen</button>
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    function deleteVocab(index) {
+      vocab.splice(index, 1);
+      localStorage.setItem('vocab', JSON.stringify(vocab));
+      renderVocab();
+    }
+
+    form.onsubmit = function(e) {
+      e.preventDefault();
+      const foreign = document.getElementById('foreignWord').value.trim();
+      const german = document.getElementById('germanWord').value.trim();
+      if (!foreign || !german) return;
+      vocab.push({ foreign, german });
+      localStorage.setItem('vocab', JSON.stringify(vocab));
+      form.reset();
+      renderVocab();
+    };
+
+    renderVocab();
+  </script>
+</body>
+</html>
