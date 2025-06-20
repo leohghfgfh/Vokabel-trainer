@@ -1,94 +1,150 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mein Vokabeltrainer</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vokabeltrainer wie Quizlet</title>
   <style>
     body {
       font-family: sans-serif;
-      background: #f9f9f9;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
       padding: 2rem;
-      max-width: 600px;
-      margin: auto;
+      background: #f7f7f7;
     }
     h1 {
-      text-align: center;
+      margin-bottom: 1rem;
     }
-    input, textarea, button {
-      width: 100%;
-      margin: 0.5rem 0;
+    #input-area {
+      margin-bottom: 2rem;
+    }
+    input {
       padding: 0.5rem;
-      font-size: 1rem;
+      margin: 0.2rem;
+    }
+    button {
+      padding: 0.5rem 1rem;
+      margin: 0.5rem;
     }
     .card {
+      width: 300px;
+      height: 150px;
+      border-radius: 10px;
       background: white;
-      padding: 1rem;
-      margin: 1rem 0;
-      border-radius: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      font-size: 1.5rem;
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.3s;
+      margin: 1rem;
     }
-    .vocab-list {
-      margin-top: 2rem;
+    .quiz-option {
+      padding: 0.5rem 1rem;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      margin: 0.5rem;
+      cursor: pointer;
+    }
+    .quiz-option:hover {
+      background-color: #e3e3e3;
     }
   </style>
 </head>
 <body>
-  <h1>🌍 Mein Vokabeltrainer</h1>
 
-  <form id="vocabForm">
-    <label>Wort (Fremdsprache):</label>
-    <input type="text" id="foreignWord" required placeholder="z. B. дом">
+  <h1>🧠 Vokabeltrainer</h1>
 
-    <label>Übersetzung (Deutsch):</label>
-    <input type="text" id="germanWord" required placeholder="z. B. Haus">
+  <div id="input-area">
+    <input id="question" placeholder="Vorderseite (z. B. дом)" />
+    <input id="answer" placeholder="Rückseite (z. B. Haus)" />
+    <button onclick="addCard()">Hinzufügen</button>
+  </div>
 
-    <button type="submit">➕ Hinzufügen</button>
-  </form>
+  <div>
+    <button onclick="showMode('cards')">🃏 Karteikarten</button>
+    <button onclick="showMode('quiz')">✅ Lernen (Quiz)</button>
+  </div>
 
-  <div class="vocab-list" id="vocabList">
-    <h2>📝 Meine Vokabeln</h2>
-    <!-- Wörter erscheinen hier -->
+  <div id="cards" style="display: none;"></div>
+  <div id="quiz" style="display: none;">
+    <div id="quiz-question" style="font-size: 1.3rem; margin: 1rem;"></div>
+    <div id="quiz-options"></div>
+    <div id="quiz-feedback" style="margin-top: 1rem;"></div>
   </div>
 
   <script>
-    const form = document.getElementById('vocabForm');
-    const list = document.getElementById('vocabList');
+    const cards = [];
 
-    let vocab = JSON.parse(localStorage.getItem('vocab') || '[]');
+    function addCard() {
+      const q = document.getElementById('question').value.trim();
+      const a = document.getElementById('answer').value.trim();
+      if (!q || !a) return alert("Beide Felder ausfüllen!");
+      cards.push({ question: q, answer: a });
+      document.getElementById('question').value = '';
+      document.getElementById('answer').value = '';
+      renderCards();
+    }
 
-    function renderVocab() {
-      list.innerHTML = '<h2>📝 Meine Vokabeln</h2>';
-      vocab.forEach(({ foreign, german }, i) => {
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.innerHTML = `
-          <strong>${foreign}</strong><br>
-          <em>${german}</em>
-          <br><button onclick="deleteVocab(${i})">❌ Löschen</button>
-        `;
-        list.appendChild(card);
+    function renderCards() {
+      const container = document.getElementById('cards');
+      container.innerHTML = '';
+      cards.forEach((card) => {
+        const cardEl = document.createElement('div');
+        cardEl.className = 'card';
+        let flipped = false;
+        cardEl.textContent = card.question;
+        cardEl.onclick = () => {
+          flipped = !flipped;
+          cardEl.textContent = flipped ? card.answer : card.question;
+        };
+        container.appendChild(cardEl);
       });
     }
 
-    function deleteVocab(index) {
-      vocab.splice(index, 1);
-      localStorage.setItem('vocab', JSON.stringify(vocab));
-      renderVocab();
+    function showMode(mode) {
+      document.getElementById('cards').style.display = mode === 'cards' ? 'block' : 'none';
+      document.getElementById('quiz').style.display = mode === 'quiz' ? 'block' : 'none';
+      if (mode === 'quiz') startQuiz();
     }
 
-    form.onsubmit = function(e) {
-      e.preventDefault();
-      const foreign = document.getElementById('foreignWord').value.trim();
-      const german = document.getElementById('germanWord').value.trim();
-      if (!foreign || !german) return;
-      vocab.push({ foreign, german });
-      localStorage.setItem('vocab', JSON.stringify(vocab));
-      form.reset();
-      renderVocab();
-    };
+    function startQuiz() {
+      if (cards.length < 4) {
+        document.getElementById('quiz-question').textContent = "Mindestens 4 Vokabeln erforderlich!";
+        document.getElementById('quiz-options').innerHTML = '';
+        return;
+      }
 
-    renderVocab();
+      const correct = cards[Math.floor(Math.random() * cards.length)];
+      const options = [correct.answer];
+      while (options.length < 4) {
+        const rand = cards[Math.floor(Math.random() * cards.length)].answer;
+        if (!options.includes(rand)) options.push(rand);
+      }
+      options.sort(() => Math.random() - 0.5); // mischen
+
+      document.getElementById('quiz-question').textContent = `Was bedeutet: ${correct.question}?`;
+      const optionContainer = document.getElementById('quiz-options');
+      optionContainer.innerHTML = '';
+      document.getElementById('quiz-feedback').textContent = '';
+
+      options.forEach(opt => {
+        const btn = document.createElement('div');
+        btn.className = 'quiz-option';
+        btn.textContent = opt;
+        btn.onclick = () => {
+          const feedback = opt === correct.answer ? "✅ Richtig!" : `❌ Falsch! Richtige Antwort: ${correct.answer}`;
+          document.getElementById('quiz-feedback').textContent = feedback;
+          setTimeout(startQuiz, 1500);
+        };
+        optionContainer.appendChild(btn);
+      });
+    }
   </script>
+
 </body>
 </html>
